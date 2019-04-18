@@ -1,9 +1,12 @@
+#include <stdint.h>
+
 #include "opendla_small.h"
 #include "mmio.h"
+#include "encoding.h"
 
 #define NVDLA_BASE 0x10040000
 #define reg_write(addr,val) reg_write32(NVDLA_BASE+addr,val)
-
+#define reg_read(addr) reg_read32(NVDLA_BASE+addr)
 
 int main(void)
 {
@@ -387,7 +390,7 @@ int main(void)
     // CDP_D_DATOUT_OFFSET_0.DATOUT_OFFSET:0x80
     reg_write(CDP_D_DST_SURFACE_STRIDE_0, 0x800);
     // CDP_D_DST_SURFACE_STRIDE_0.DST_SURFACE_STRIDE:0x40
-    reg_write(CDP_RDMA_D_SRC_BASE_ADDR_LOW_0, 0x80000000);
+    reg_write(CDP_RDMA_D_SRC_BASE_ADDR_LOW_0, 0x90000000);
     // CDP_RDMA_D_SRC_BASE_ADDR_LOW_0.SRC_BASE_ADDR_LOW:0x4000000
     reg_write(CDP_D_DST_DMA_CFG_0, 0x1);
     // CDP_D_DST_DMA_CFG_0.DST_RAM_TYPE:MC : 0x1
@@ -429,7 +432,7 @@ int main(void)
     reg_write(CDP_D_FUNC_BYPASS_0, 0x3);
     // CDP_D_FUNC_BYPASS_0.SQSUM_BYPASS:ENABLE : 0x1
     // CDP_D_FUNC_BYPASS_0.MUL_BYPASS:ENABLE : 0x1
-    reg_write(CDP_D_DST_BASE_ADDR_LOW_0, 0x80080000);
+    reg_write(CDP_D_DST_BASE_ADDR_LOW_0, 0x90080000);
     // CDP_D_DST_BASE_ADDR_LOW_0.DST_BASE_ADDR_LOW:0x4004000
     reg_write(CDP_RDMA_D_CYA_0, 0x0);
     // CDP_RDMA_D_CYA_0.CYA:0x0
@@ -451,7 +454,15 @@ int main(void)
     //----------#### Layer:CDP_0: operation enable, block:NVDLA_CDP, end   --
     //----------## Layer:CDP_0: operation enable, end----------
     
-    for (volatile int i = 0; i < 65535; i++);
+    register uint64_t cycle1 = rdcycle();
+
+    for (register int idx = 0; idx < 32767; idx++) {
+        if (reg_read(GLB_S_INTR_STATUS_0) != 0)
+            break;
+    }
+
+    uint64_t cycle2 = rdcycle();
+    printf("cycle1: %lu, cycle2: %lu, diff: %lu\n", cycle1, cycle2, cycle2 - cycle1 );
     
     return 0;
 }
